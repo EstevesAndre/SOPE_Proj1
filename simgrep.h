@@ -24,3 +24,5 @@ typedef struct
 } option;
 
 int argchk(int argc, char* argv[], option* op);
+char** file_search(char* pattern, option* op);
+void printRes(char** res);

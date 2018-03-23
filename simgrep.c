@@ -27,7 +27,7 @@ int main(int argc, char *argv[])
              printf("failed to open: %s\n", argv[op.file_dir_pos]);
              return 2;
           }
-          dup2(STDIN_FILENO, fd); 
+          dup2(fd, STDIN_FILENO); 
        }
        else if(S_ISDIR(s.st_mode))
        {
@@ -38,10 +38,56 @@ int main(int argc, char *argv[])
            printf("file or directory not found: %s\n", argv[op.file_dir_pos]);
            return 3;
        }
-    }
+     }
 
+     /////PROVISÓRIO - APENAS PARA TESTE
+     char** res = file_search(argv[op.pattern_pos], &op);
+     printRes(res);
+     /////
     return 0; 
 } 
+
+char** file_search(char* pattern, option* op)
+{
+   FILE* f = fdopen(STDIN_FILENO, "r");
+   int t = 1024;
+   int ret_pos = 0;
+   char* line = malloc((t+1) * sizeof(char));
+
+   fseek(f, 0, SEEK_END);
+   int line_no = ftell(f);
+   if(line_no == -1)
+     line_no = 100; 
+
+   char** ret = malloc( line_no * sizeof(char));
+   fseek(f, 0, SEEK_SET);
+   line = fgets(line, t, f);
+   while(line != NULL)
+   {
+       if(strstr(line, pattern) != NULL)
+       {
+           ret[ret_pos] = malloc((t+1)*sizeof(char));
+	   strcpy(ret[ret_pos], line);
+           ret_pos++;
+       }
+       line = fgets(line, t, f);
+   }
+   ret[ret_pos] = NULL;
+
+   free(line);
+   return ret;
+}
+
+void printRes(char** res)
+{
+   int i = 0;
+
+   while(res[i] != NULL)
+   {
+      printf("%s", res[i]);
+      i++;
+   }
+}
 
 int argchk(int argc, char* argv[], option* op)
 {
