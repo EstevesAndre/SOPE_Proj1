@@ -8,6 +8,7 @@
 #include <sys/stat.h> 
 #include <string.h>
 #include <fcntl.h>
+#include <ctype.h>
 #include "simgrep.h"
 
 int main(int argc, char *argv[])
@@ -55,6 +56,7 @@ void file_search(char* pattern, option* op, searchResult* out)
    FILE* f = fdopen(STDIN_FILENO, "r");
    int t = 1024;
    int ret_pos = 0;
+   int current_line = 1;
    char* line = malloc((t+1) * sizeof(char));
 
    fseek(f, 0, SEEK_END);
@@ -79,11 +81,33 @@ void file_search(char* pattern, option* op, searchResult* out)
        }
        if(pos != NULL)
        {
-           ret[ret_pos] = malloc((t+1)*sizeof(char));
-	   strcpy(ret[ret_pos], line);
-           ret_pos++;
+           if(op->word == OP_FALSE || checkAsWord(line, pos, pattern) != 0)
+           {
+              ret[ret_pos] = malloc((t+1)*sizeof(char));
+              if(op->line_number == OP_TRUE)
+              {
+                  char n_line[12];
+                  snprintf(n_line, 12, "%d", current_line);
+               
+                  char* colon = ":";
+
+                  char *result = malloc(strlen(n_line)+strlen(colon)+strlen(line)+1);
+                  strcpy(result, n_line);
+                  strcat(result, colon);
+                  strcat(result, line);
+               
+                  strcpy(ret[ret_pos], result);
+              }
+              else
+              {
+                  strcpy(ret[ret_pos], line);
+              }
+              ret_pos++;
+           }
+           
        }
        line = fgets(line, t, f);
+       current_line++;
    }
 
    out->result = ret;
@@ -101,6 +125,22 @@ void printRes(searchResult r)
       printf("%s", r.result[i]);
       i++;
    }
+}
+
+int checkAsWord(char* line, char* pos, char* pattern)
+{
+    if(line != pos)
+    {
+        char* esq_pos = pos - sizeof(char);
+        if(isalnum(*esq_pos) != 0 || *esq_pos == '_')
+           return 0;
+    }
+    
+    char* dir_pos = pos + sizeof(char) * (strlen(pattern));
+    if(isalnum(*dir_pos) != 0 || *dir_pos == '_')
+      return 0;
+
+    return 1;
 }
 
 int argchk(int argc, char* argv[], option* op)
