@@ -1,3 +1,5 @@
+#define _GNU_SOURCE
+
 #include <stdio.h> 
 #include <signal.h> 
 #include <unistd.h> 
@@ -41,13 +43,14 @@ int main(int argc, char *argv[])
      }
 
      /////PROVISÓRIO - APENAS PARA TESTE
-     char** res = file_search(argv[op.pattern_pos], &op);
+     searchResult res;
+     file_search(argv[op.pattern_pos], &op, &res);
      printRes(res);
      /////
     return 0; 
 } 
 
-char** file_search(char* pattern, option* op)
+void file_search(char* pattern, option* op, searchResult* out)
 {
    FILE* f = fdopen(STDIN_FILENO, "r");
    int t = 1024;
@@ -64,7 +67,17 @@ char** file_search(char* pattern, option* op)
    line = fgets(line, t, f);
    while(line != NULL)
    {
-       if(strstr(line, pattern) != NULL)
+       char* pos;
+
+       if(op->ignore == OP_TRUE)
+       {
+           pos = strcasestr(line, pattern);
+       }
+       else
+       {
+           pos = strstr(line, pattern);
+       }
+       if(pos != NULL)
        {
            ret[ret_pos] = malloc((t+1)*sizeof(char));
 	   strcpy(ret[ret_pos], line);
@@ -72,19 +85,20 @@ char** file_search(char* pattern, option* op)
        }
        line = fgets(line, t, f);
    }
-   ret[ret_pos] = NULL;
+
+   out->result = ret;
+   out->n_results = ret_pos;
 
    free(line);
-   return ret;
 }
 
-void printRes(char** res)
+void printRes(searchResult r)
 {
    int i = 0;
 
-   while(res[i] != NULL)
+   while(i < r.n_results)
    {
-      printf("%s", res[i]);
+      printf("%s", r.result[i]);
       i++;
    }
 }

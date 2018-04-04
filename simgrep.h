@@ -23,6 +23,12 @@ typedef struct
     int file_dir_pos;
 } option;
 
+typedef struct
+{
+    char** result;
+    int n_results;
+} searchResult;
+
 int argchk(int argc, char* argv[], option* op);
-char** file_search(char* pattern, option* op);
-void printRes(char** res);
+void file_search(char* pattern, option* op, searchResult* out);
+void printRes(searchResult res);
