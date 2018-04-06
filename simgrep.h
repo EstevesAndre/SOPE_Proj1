@@ -30,6 +30,7 @@ typedef struct
 } searchResult;
 
 int processFile(char* file, char* pattern, option* op);
+int processDir(char* dir, char* pattern, option* op);
 int argchk(int argc, char* argv[], option* op);
 void file_search(char* pattern, option* op, searchResult* out);
 void printRes(searchResult res, option* op, char* file);

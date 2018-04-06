@@ -9,6 +9,7 @@
 #include <string.h>
 #include <fcntl.h>
 #include <ctype.h>
+#include <dirent.h> 
 #include "simgrep.h"
 
 int main(int argc, char *argv[])
@@ -28,7 +29,14 @@ int main(int argc, char *argv[])
        }
        else if(S_ISDIR(s.st_mode))
        {
-
+          if(argv[op.file_dir_pos][(strlen(argv[op.file_dir_pos])-1)] != '/')
+          {
+             char *result = malloc(strlen(argv[op.file_dir_pos])+2);
+             strcpy(result, argv[op.file_dir_pos]);
+             strcat(result, "/");
+             return processDir(result, argv[op.pattern_pos], &op);
+          }
+	  return processDir(argv[op.file_dir_pos], argv[op.pattern_pos], &op);
        }
        else
        {
@@ -58,6 +66,45 @@ int processFile(char* file, char* pattern, option* op)
    file_search(pattern, op, &res);
    printRes(res, op, file);
 
+   return 0;
+}
+
+int processDir(char* dir, char* pattern, option* op)
+{
+    DIR *d;
+    struct dirent *dentry;
+    struct stat stat_entry; 
+
+    if ((d = opendir(dir)) == NULL) {
+ 	printf("failed to open: %s\n", dir);
+        return 2;
+    }
+
+    while ((dentry = readdir(d)) != NULL) {
+       lstat(dentry->d_name, &stat_entry); 
+
+       char *result = malloc(strlen(dir)+strlen(dentry->d_name)+2);
+       strcpy(result, dir);
+       strcat(result, dentry->d_name);
+
+       if(dentry->d_type == DT_REG)
+       {
+          int i = processFile(result, pattern, op);
+          if(i != 0)
+             return i;
+       }
+       else if(dentry->d_type == DT_DIR && op->recursive == OP_TRUE)
+       {
+          strcat(result, "/");
+          if(dentry->d_name[0] == '.')
+          {
+             continue;
+          }
+	  int i = processDir(result, pattern, op);
+          if(i != 0)
+             return i;
+       }
+   }
    return 0;
 }
 
