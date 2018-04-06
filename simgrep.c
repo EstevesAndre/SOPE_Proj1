@@ -46,7 +46,7 @@ int main(int argc, char *argv[])
      /////PROVISÓRIO - APENAS PARA TESTE
      searchResult res;
      file_search(argv[op.pattern_pos], &op, &res);
-     printRes(res);
+     printRes(res, &op, argv[op.file_dir_pos]);
      /////
     return 0; 
 } 
@@ -116,8 +116,19 @@ void file_search(char* pattern, option* op, searchResult* out)
    free(line);
 }
 
-void printRes(searchResult r)
+void printRes(searchResult r, option* op, char* file)
 {
+   if(op->file_name == OP_TRUE && r.n_results != 0)
+   {
+      printf("%s\n", file);
+      return;
+   }
+
+   if(op->count)
+   {
+      printf("Number of occurences: %d\n", r.n_results); 	
+   }
+
    int i = 0;
 
    while(i < r.n_results)
