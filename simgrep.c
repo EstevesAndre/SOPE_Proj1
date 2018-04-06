@@ -24,13 +24,7 @@ int main(int argc, char *argv[])
        stat(argv[op.file_dir_pos], &s);
        if(S_ISREG(s.st_mode))
        {
-          int fd = open(argv[op.file_dir_pos], O_RDONLY);
-          if(fd == -1)
-          {
-             printf("failed to open: %s\n", argv[op.file_dir_pos]);
-             return 2;
-          }
-          dup2(fd, STDIN_FILENO); 
+          return processFile(argv[op.file_dir_pos], argv[op.pattern_pos], &op);
        }
        else if(S_ISDIR(s.st_mode))
        {
@@ -42,14 +36,30 @@ int main(int argc, char *argv[])
            return 3;
        }
      }
-
-     /////PROVISÓRIO - APENAS PARA TESTE
-     searchResult res;
-     file_search(argv[op.pattern_pos], &op, &res);
-     printRes(res, &op, argv[op.file_dir_pos]);
-     /////
+     else
+     {
+	 searchResult res;
+    	 file_search(argv[op.pattern_pos], &op, &res);
+	 printRes(res, &op, argv[op.file_dir_pos]);
+     }
     return 0; 
 } 
+
+int processFile(char* file, char* pattern, option* op)
+{
+   int fd = open(file, O_RDONLY);
+   if(fd == -1)
+   {
+        printf("failed to open: %s\n", file);
+        return 2;
+   }
+   dup2(fd, STDIN_FILENO); 
+   searchResult res;
+   file_search(pattern, op, &res);
+   printRes(res, op, file);
+
+   return 0;
+}
 
 void file_search(char* pattern, option* op, searchResult* out)
 {
