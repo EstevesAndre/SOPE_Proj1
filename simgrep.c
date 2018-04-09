@@ -35,26 +35,20 @@ int main(int argc, char *argv[])
              strcpy(result, argv[op.file_dir_pos]);
              strcat(result, "/");
              
+             if(fork() <= 0)
+            {
+                 processDir(result, argv[op.pattern_pos], &op);
+                kill(getpid(), SIGKILL);
+            }
              
-             int pid = fork();
-
-             if(pid == 0)
-             {
-                processDir(result, argv[op.pattern_pos], &op);
-                exit(0);
-             }
           }
           else
           {
-
-             int pid = fork();
-
-             if(pid == 0)
-             {
+            if(fork() <= 0)
+            {
                 processDir(argv[op.file_dir_pos], argv[op.pattern_pos], &op);
-                exit(0);
-             }
-	       
+                kill(getpid(), SIGKILL);
+            }
           }
        }
        else
@@ -65,9 +59,9 @@ int main(int argc, char *argv[])
      }
      else
      {
-	 searchResult res;
-    	 file_search(argv[op.pattern_pos], &op, &res);
-	 printRes(res, &op, argv[op.file_dir_pos]);
+	    searchResult res;
+        file_search(argv[op.pattern_pos], &op, &res);
+	    printRes(res, &op, argv[op.file_dir_pos]);
      }
     return 0; 
 } 
@@ -99,7 +93,7 @@ void processDir(char* dir, char* pattern, option* op)
 
     while ((dentry = readdir(d)) != NULL) {
        lstat(dentry->d_name, &stat_entry); 
-
+      
        char *result = malloc(strlen(dir)+strlen(dentry->d_name)+2);
        strcpy(result, dir);
        strcat(result, dentry->d_name);
@@ -116,13 +110,11 @@ void processDir(char* dir, char* pattern, option* op)
              continue;
           }
 
-          int pid = fork();
-
-             if(pid == 0)
-             {
-                processDir(result, pattern, op);
-                exit(0);
-             }
+          if(fork() <= 0)
+          {
+             processDir(result, pattern, op);
+             kill(getpid(), SIGKILL);
+          }
        }
    }
 
