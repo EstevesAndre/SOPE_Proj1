@@ -25,7 +25,7 @@ int main(int argc, char *argv[])
        stat(argv[op.file_dir_pos], &s);
        if(S_ISREG(s.st_mode))
        {
-          return processFile(argv[op.file_dir_pos], argv[op.pattern_pos], &op);
+          processFile(argv[op.file_dir_pos], argv[op.pattern_pos], &op);
        }
        else if(S_ISDIR(s.st_mode))
        {
@@ -34,9 +34,28 @@ int main(int argc, char *argv[])
              char *result = malloc(strlen(argv[op.file_dir_pos])+2);
              strcpy(result, argv[op.file_dir_pos]);
              strcat(result, "/");
-             return processDir(result, argv[op.pattern_pos], &op);
+             
+             
+             int pid = fork();
+
+             if(pid == 0)
+             {
+                processDir(result, argv[op.pattern_pos], &op);
+                exit(0);
+             }
           }
-	  return processDir(argv[op.file_dir_pos], argv[op.pattern_pos], &op);
+          else
+          {
+
+             int pid = fork();
+
+             if(pid == 0)
+             {
+                processDir(argv[op.file_dir_pos], argv[op.pattern_pos], &op);
+                exit(0);
+             }
+	       
+          }
        }
        else
        {
@@ -53,23 +72,21 @@ int main(int argc, char *argv[])
     return 0; 
 } 
 
-int processFile(char* file, char* pattern, option* op)
+void processFile(char* file, char* pattern, option* op)
 {
    int fd = open(file, O_RDONLY);
    if(fd == -1)
    {
         printf("failed to open: %s\n", file);
-        return 2;
+        exit(2);
    }
    dup2(fd, STDIN_FILENO); 
    searchResult res;
    file_search(pattern, op, &res);
    printRes(res, op, file);
-
-   return 0;
 }
 
-int processDir(char* dir, char* pattern, option* op)
+void processDir(char* dir, char* pattern, option* op)
 {
     DIR *d;
     struct dirent *dentry;
@@ -77,7 +94,7 @@ int processDir(char* dir, char* pattern, option* op)
 
     if ((d = opendir(dir)) == NULL) {
  	printf("failed to open: %s\n", dir);
-        return 2;
+        exit(2);
     }
 
     while ((dentry = readdir(d)) != NULL) {
@@ -89,9 +106,7 @@ int processDir(char* dir, char* pattern, option* op)
 
        if(dentry->d_type == DT_REG)
        {
-          int i = processFile(result, pattern, op);
-          if(i != 0)
-             return i;
+          processFile(result, pattern, op);
        }
        else if(dentry->d_type == DT_DIR && op->recursive == OP_TRUE)
        {
@@ -100,12 +115,17 @@ int processDir(char* dir, char* pattern, option* op)
           {
              continue;
           }
-	  int i = processDir(result, pattern, op);
-          if(i != 0)
-             return i;
+
+          int pid = fork();
+
+             if(pid == 0)
+             {
+                processDir(result, pattern, op);
+                exit(0);
+             }
        }
    }
-   return 0;
+
 }
 
 void file_search(char* pattern, option* op, searchResult* out)
