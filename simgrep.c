@@ -5,6 +5,7 @@
 #include <unistd.h> 
 #include <stdlib.h> 
 #include <sys/types.h>
+#include <sys/wait.h>
 #include <sys/stat.h> 
 #include <string.h>
 #include <fcntl.h>
@@ -63,11 +64,13 @@ int main(int argc, char *argv[])
         file_search(argv[op.pattern_pos], &op, &res);
 	    printRes(res, &op, argv[op.file_dir_pos]);
      }
+     while(wait(NULL) == 0);
     return 0; 
 } 
 
 void processFile(char* file, char* pattern, option* op)
 {
+
    int fd = open(file, O_RDONLY);
    if(fd == -1)
    {
