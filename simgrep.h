@@ -35,3 +35,4 @@ int argchk(int argc, char* argv[], option* op);
 void file_search(char* pattern, option* op, searchResult* out);
 void printRes(searchResult res, option* op, char* file);
 int checkAsWord(char* line, char* pos, char* pattern);
+void parent_sigint_handler(int signo);

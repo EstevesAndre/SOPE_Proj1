@@ -11,10 +11,15 @@
 #include <fcntl.h>
 #include <ctype.h>
 #include <dirent.h> 
+#include <errno.h>
 #include "simgrep.h"
 
 int main(int argc, char *argv[])
 {
+    setpgid(getpid(), 10000);
+    printf("%d %d\n", getpid(), getpgrp());
+    signal(SIGINT,parent_sigint_handler);
+    
     option op = {OP_FALSE, OP_FALSE, OP_FALSE, OP_FALSE, OP_FALSE, OP_FALSE, NON_EXISTENT, NON_EXISTENT};
     int r = argchk(argc, argv, &op);
     if(r != 0)
@@ -38,8 +43,11 @@ int main(int argc, char *argv[])
              
              if(fork() <= 0)
             {
+                printf("%d\n",setpgid(getpid(), 10001));
+                printf("%d %d %d\n", getpid(), getpgrp(), getpgid(getpid()));
                  processDir(result, argv[op.pattern_pos], &op);
-                kill(getpid(), SIGKILL);
+                 while(wait(NULL) != -1);
+                exit(0);
             }
              
           }
@@ -47,8 +55,11 @@ int main(int argc, char *argv[])
           {
             if(fork() <= 0)
             {
+                printf("%d\n",setpgid(getpid(), 10001));
+                printf("%d %d %d\n", getpid(), getpgrp(), getpgid(getpid()));
                 processDir(argv[op.file_dir_pos], argv[op.pattern_pos], &op);
-                kill(getpid(), SIGKILL);
+                while(wait(NULL) != -1);
+                exit(0);
             }
           }
        }
@@ -64,7 +75,7 @@ int main(int argc, char *argv[])
         file_search(argv[op.pattern_pos], &op, &res);
 	    printRes(res, &op, argv[op.file_dir_pos]);
      }
-     while(wait(NULL) == 0);
+     while(wait(NULL) != -1);
     return 0; 
 } 
 
@@ -115,11 +126,15 @@ void processDir(char* dir, char* pattern, option* op)
 
           if(fork() <= 0)
           {
+             printf("%d\n",setpgid(getpid(), 10001));
+             printf("%d %d %d\n", getpid(), getpgrp(), getpgid(getpid()));
              processDir(result, pattern, op);
-             kill(getpid(), SIGKILL);
+             while(wait(NULL) != -1);
+             exit(0);
           }
        }
    }
+   while(wait(NULL) != -1);
 
 }
 
@@ -190,15 +205,16 @@ void file_search(char* pattern, option* op, searchResult* out)
 
 void printRes(searchResult r, option* op, char* file)
 {
-   if(op->file_name == OP_TRUE && r.n_results != 0)
+  /* if(op->file_name == OP_TRUE)
    {
-      printf("%s\n", file);
-      return;
+       if(r.n_results != 0)
+            printf("%s\n", file);
+       return;
    }
 
    if(op->count)
    {
-      printf("Number of occurences: %d\n", r.n_results); 	
+      printf("\nNumber of occurences on file %s: %d\n", file, r.n_results); 	
    }
 
    int i = 0;
@@ -207,7 +223,7 @@ void printRes(searchResult r, option* op, char* file)
    {
       printf("%s", r.result[i]);
       i++;
-   }
+   }*/
 }
 
 int checkAsWord(char* line, char* pos, char* pattern)
@@ -289,3 +305,22 @@ int argchk(int argc, char* argv[], option* op)
     }
     return 0;
 }
+
+void parent_sigint_handler(int signo) 
+{ 
+    killpg(10001, SIGTSTP);
+    char option;
+    printf("\nAre you sure you want to terminate the program? (Y/N) ");
+    scanf(" %c", &option);
+    
+    if(option == 'Y' || option == 'y')
+    {
+        killpg(10001, SIGKILL);
+        exit(4);
+
+    }
+    else{
+        killpg(10001, SIGCONT);
+    }
+} 
+
