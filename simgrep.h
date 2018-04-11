@@ -1,9 +1,9 @@
-#include <stdio.h> 
-#include <signal.h> 
-#include <unistd.h> 
-#include <stdlib.h> 
+#include <stdio.h>
+#include <signal.h>
+#include <unistd.h>
+#include <stdlib.h>
 #include <sys/types.h>
-#include <sys/stat.h> 
+#include <sys/stat.h>
 #include <string.h>
 
 #define OP_TRUE 1
@@ -36,3 +36,4 @@ void file_search(char* pattern, option* op, searchResult* out);
 void printRes(searchResult res, option* op, char* file);
 int checkAsWord(char* line, char* pos, char* pattern);
 void parent_sigint_handler(int signo);
+void processDirAux(char* dir, char* pattern, option* op);
