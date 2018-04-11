@@ -1,34 +1,35 @@
 #define _GNU_SOURCE
 
-#include <stdio.h>
-#include <signal.h>
-#include <unistd.h>
-#include <stdlib.h>
+#include <stdio.h> 
+#include <signal.h> 
+#include <unistd.h> 
+#include <stdlib.h> 
 #include <sys/types.h>
 #include <sys/wait.h>
-#include <sys/stat.h>
+#include <sys/stat.h> 
 #include <string.h>
 #include <fcntl.h>
 #include <ctype.h>
-#include <dirent.h>
+#include <dirent.h> 
 #include <errno.h>
 #include "simgrep.h"
 
-int main(int argc, char *argv[])
-{
-    if(setpgid(getpid(), 10000) == -1)
-    {
-        perror("Error on setting pgid");
-        exit(6);
-    }
+int pgid;
 
-    printf("%d %d\n", getpid(), getpgrp());
-    signal(SIGINT,parent_sigint_handler);
+int main(int argc, char *argv[])
+{   signal(SIGINT,parent_sigint_handler);
+    
+    pgid = fork();
+
+    if(pgid <= 0)
+    {
+    pgid = getpid();
+    setpgrp();
 
     option op = {OP_FALSE, OP_FALSE, OP_FALSE, OP_FALSE, OP_FALSE, OP_FALSE, NON_EXISTENT, NON_EXISTENT};
     int r = argchk(argc, argv, &op);
     if(r != 0)
-      return r;
+      return r;   
 
     if(op.file_dir_pos != NON_EXISTENT) //there is a file/dir specified
     {
@@ -45,18 +46,22 @@ int main(int argc, char *argv[])
              char *result = malloc(strlen(argv[op.file_dir_pos])+2);
              strcpy(result, argv[op.file_dir_pos]);
              strcat(result, "/");
-
+             
              if(fork() <= 0)
             {
-              processDirAux(result, argv[op.pattern_pos], &op);
+                 processDir(result, argv[op.pattern_pos], &op);
+                 while(wait(NULL) != -1);
+                exit(0);
             }
-
+             
           }
           else
           {
             if(fork() <= 0)
             {
-              processDirAux(argv[op.file_dir_pos], argv[op.pattern_pos], &op);
+                processDir(argv[op.file_dir_pos], argv[op.pattern_pos], &op);
+                while(wait(NULL) != -1);
+                exit(0);
             }
           }
        }
@@ -68,13 +73,16 @@ int main(int argc, char *argv[])
      }
      else
      {
-	       searchResult res;
-         file_search(argv[op.pattern_pos], &op, &res);
-	       printRes(res, &op, argv[op.file_dir_pos]);
+	    searchResult res;
+        file_search(argv[op.pattern_pos], &op, &res);
+	    printRes(res, &op, argv[op.file_dir_pos]);
      }
      while(wait(NULL) != -1);
-    return 0;
-}
+     exit(0);
+    }
+    while(wait(NULL) != -1);
+    return 0; 
+} 
 
 void processFile(char* file, char* pattern, option* op)
 {
@@ -85,7 +93,7 @@ void processFile(char* file, char* pattern, option* op)
         printf("failed to open: %s\n", file);
         exit(2);
    }
-   dup2(fd, STDIN_FILENO);
+   dup2(fd, STDIN_FILENO); 
    searchResult res;
    file_search(pattern, op, &res);
    printRes(res, op, file);
@@ -95,7 +103,7 @@ void processDir(char* dir, char* pattern, option* op)
 {
     DIR *d;
     struct dirent *dentry;
-    struct stat stat_entry;
+    struct stat stat_entry; 
 
     if ((d = opendir(dir)) == NULL) {
  	printf("failed to open: %s\n", dir);
@@ -103,8 +111,8 @@ void processDir(char* dir, char* pattern, option* op)
     }
 
     while ((dentry = readdir(d)) != NULL) {
-       lstat(dentry->d_name, &stat_entry);
-
+       lstat(dentry->d_name, &stat_entry); 
+      
        char *result = malloc(strlen(dir)+strlen(dentry->d_name)+2);
        strcpy(result, dir);
        strcat(result, dentry->d_name);
@@ -122,8 +130,10 @@ void processDir(char* dir, char* pattern, option* op)
           }
 
           if(fork() <= 0)
-          {
-            processDirAux(result, pattern, op);
+          { 
+             processDir(result, pattern, op);
+             while(wait(NULL) != -1);
+             exit(0);
           }
        }
    }
@@ -139,21 +149,13 @@ void file_search(char* pattern, option* op, searchResult* out)
    int current_line = 1;
    char* line = malloc((t+1) * sizeof(char));
 
-   if( (fseek(f, 0, SEEK_END)) != 0)
-   {
-      perror("Failed on setting the file position of the stream to the given offset.")
-      exit(8);
-   }
+   fseek(f, 0, SEEK_END);
    int line_no = ftell(f);
    if(line_no == -1)
-     line_no = 100;
+     line_no = 100; 
 
    char** ret = malloc( line_no * sizeof(char));
-   if( (fseek(f, 0, SEEK_SET)) != 0)
-   {
-      perror("Failed on setting the file position of the stream to the given offset.")
-      exit(8);
-   }
+   fseek(f, 0, SEEK_SET);
    line = fgets(line, t, f);
    while(line != NULL)
    {
@@ -176,14 +178,14 @@ void file_search(char* pattern, option* op, searchResult* out)
               {
                   char n_line[12];
                   snprintf(n_line, 12, "%d", current_line);
-
+               
                   char* colon = ":";
 
                   char *result = malloc(strlen(n_line)+strlen(colon)+strlen(line)+1);
                   strcpy(result, n_line);
                   strcat(result, colon);
                   strcat(result, line);
-
+               
                   strcpy(ret[ret_pos], result);
               }
               else
@@ -192,7 +194,7 @@ void file_search(char* pattern, option* op, searchResult* out)
               }
               ret_pos++;
            }
-
+           
        }
        line = fgets(line, t, f);
        current_line++;
@@ -206,7 +208,7 @@ void file_search(char* pattern, option* op, searchResult* out)
 
 void printRes(searchResult r, option* op, char* file)
 {
-  /* if(op->file_name == OP_TRUE)
+  if(op->file_name == OP_TRUE)
    {
        if(r.n_results != 0)
             printf("%s\n", file);
@@ -215,7 +217,7 @@ void printRes(searchResult r, option* op, char* file)
 
    if(op->count)
    {
-      printf("\nNumber of occurences on file %s: %d\n", file, r.n_results);
+      printf("\nNumber of occurences on file %s: %d\n", file, r.n_results); 	
    }
 
    int i = 0;
@@ -224,7 +226,7 @@ void printRes(searchResult r, option* op, char* file)
    {
       printf("%s", r.result[i]);
       i++;
-   }*/
+   }
 }
 
 int checkAsWord(char* line, char* pos, char* pattern)
@@ -235,7 +237,7 @@ int checkAsWord(char* line, char* pos, char* pattern)
         if(isalnum(*esq_pos) != 0 || *esq_pos == '_')
            return 0;
     }
-
+    
     char* dir_pos = pos + sizeof(char) * (strlen(pattern));
     if(isalnum(*dir_pos) != 0 || *dir_pos == '_')
       return 0;
@@ -253,7 +255,7 @@ int argchk(int argc, char* argv[], option* op)
 
     int i;
     for (i = 1; i < argc; i++)
-    {
+    {	
         if (strcmp(argv[i], "-i") == 0) /* Option "-i" entered */
         {
             op->ignore = OP_TRUE;
@@ -307,47 +309,21 @@ int argchk(int argc, char* argv[], option* op)
     return 0;
 }
 
-void parent_sigint_handler(int signo)
-{
-    if(killpg(10001, SIGTSTP) == -1)
-    {
-      perror("Error on sending signal to process group 10001");
-      exit(7);
-    }
+void parent_sigint_handler(int signo) 
+{ 
+    killpg(pgid, SIGTSTP);
     char option;
     printf("\nAre you sure you want to terminate the program? (Y/N) ");
     scanf(" %c", &option);
-
+    
     if(option == 'Y' || option == 'y')
     {
-        if(killpg(10001, SIGKILL) == -1)
-        {
-          perror("Error on sending signal to process group 10001");
-          exit(7);
-        }
+        killpg(pgid, SIGKILL);
         exit(4);
 
     }
-    else
-    {
-        if(killpg(10001, SIGCONT) == -1)
-        {
-          perror("Error on sending signal to process group 10001");
-          exit(7);
-        }
+    else{
+        killpg(pgid, SIGCONT);
     }
-}
+} 
 
-void processDirAux(char* dir, char* pattern, option* op)
-{
-    if(setpgid(getpid(), 10001) == -1)
-    {
-        perror("Error on setting pgid");
-        exit(6);
-    }
-
-    printf("%d %d %d\n", getpid(), getpgrp(), getpgid(getpid()));
-    processDir(dir, pattern, op);
-    while(wait(NULL) != -1);
-    exit(0);
-}
