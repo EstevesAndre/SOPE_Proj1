@@ -12,21 +12,22 @@
 
 typedef struct
 {
-    int ignore;  /* Value for the "-i" optional argument. */
-    int file_name;  /* Value for the "-l" optional argument. */
-    int line_number;  /* Value for the "-n" optional argument. */
-    int count;  /* Value for the "-c" optional argument. */
-    int word;  /* Value for the "-w" optional argument. */
-    int recursive;  /* Value for the "-r" optional argument. */
+        int ignore; /* Value for the "-i" optional argument. */
+        int file_name; /* Value for the "-l" optional argument. */
+        int line_number; /* Value for the "-n" optional argument. */
+        int count; /* Value for the "-c" optional argument. */
+        int word; /* Value for the "-w" optional argument. */
+        int recursive; /* Value for the "-r" optional argument. */
 
-    int pattern_pos;
-    int file_dir_pos;
+        int fileLogs; /* Value to check if we need to append log file. */
+        int pattern_pos;
+        int file_dir_pos;
 } option;
 
 typedef struct
 {
-    char** result;
-    int n_results;
+        char** result;
+        int n_results;
 } searchResult;
 
 void processFile(char* file, char* pattern, option* op);
@@ -36,3 +37,4 @@ void file_search(char* pattern, option* op, searchResult* out);
 void printRes(searchResult res, option* op, char* file);
 int checkAsWord(char* line, char* pos, char* pattern);
 void parent_sigint_handler(int signo);
+void write_to_logs_file(char* text, char* file_signal);
