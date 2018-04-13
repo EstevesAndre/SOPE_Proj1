@@ -31,26 +31,23 @@ int main(int argc, char *argv[])
         if(r != 0)
                 return r;
 
-
-
         signal(SIGINT,parent_sigint_handler);
-
-        if(descrit != -1)
-        {
-                int pid = getpid();
-
-                char pidstr[9];
-                snprintf(pidstr, sizeof pidstr, "%d", pid);
-                char * str = malloc(strlen(pidstr)+ 14);
-                strcpy(str,"SIGINT para ");
-                strcat(str,pidstr);
-                write_to_logs_file("SINAL ",str);
-        }
 
         pgid = fork();
 
         if(pgid <= 0)
         {
+
+                if(descrit != -1)
+                {
+                        char pidstr[9];
+                        snprintf(pidstr, sizeof pidstr, "%d", pgid);
+                        char * str = malloc(strlen(pidstr)+ 14);
+                        strcpy(str,"SIGINT para ");
+                        strcat(str,pidstr);
+                        write_to_logs_file("SINAL ",str);
+                }
+
                 pgid = getpid();
                 setpgrp();
 
@@ -371,7 +368,7 @@ int argchk(int argc, char* argv[], option* op)
                 size += strlen(argv[i]) + 1;
         }
 
-        char* result = malloc(strlen(cmd)+size+1);
+        char* result = malloc(strlen(cmd)+size+2);
         strcpy(result, cmd);
 
         for (i = 0; i < argc; i++)
@@ -390,10 +387,8 @@ void parent_sigint_handler(int signo)
         killpg(pgid, SIGTSTP);
         if(descrit != -1)
         {
-                int pid = getpid();
-
                 char pidstr[9];
-                snprintf(pidstr, sizeof pidstr, "%d", pid);
+                snprintf(pidstr, sizeof pidstr, "%d", pgid);
                 char * str = malloc(strlen(pidstr)+ 14);
                 strcpy(str,"SIGTSTP para ");
                 strcat(str,pidstr);
@@ -408,10 +403,8 @@ void parent_sigint_handler(int signo)
                 killpg(pgid, SIGKILL);
                 if(descrit != -1)
                 {
-                        int pid = getpid();
-
                         char pidstr[9];
-                        snprintf(pidstr, sizeof pidstr, "%d", pid);
+                        snprintf(pidstr, sizeof pidstr, "%d", pgid);
                         char * str = malloc(strlen(pidstr)+ 14);
                         strcpy(str,"SIGKILL para ");
                         strcat(str,pidstr);
@@ -425,10 +418,8 @@ void parent_sigint_handler(int signo)
                 killpg(pgid, SIGCONT);
                 if(descrit != -1)
                 {
-                        int pid = getpid();
-
                         char pidstr[9];
-                        snprintf(pidstr, sizeof pidstr, "%d", pid);
+                        snprintf(pidstr, sizeof pidstr, "%d", pgid);
                         char * str = malloc(strlen(pidstr)+ 14);
                         strcpy(str,"SIGCONT para ");
                         strcat(str,pidstr);
@@ -454,7 +445,7 @@ void write_to_logs_file(char* text, char* file_signal)
         char pidstr[9];
         snprintf(pidstr, sizeof pidstr, "%d", pid);
 
-        char *result = malloc(strlen(timespent) + strlen(pidstr) + 3*strlen(space) + strlen(file_signal)+9);
+        char *result = malloc(strlen(timespent) + strlen(pidstr) + 2*strlen(space) + strlen(text) + strlen(file_signal)+2);
 
         strcpy(result, timespent);
         strcat(result, space);
