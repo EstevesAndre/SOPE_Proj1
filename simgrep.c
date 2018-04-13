@@ -38,16 +38,6 @@ int main(int argc, char *argv[])
         if(pgid <= 0)
         {
 
-                if(descrit != -1)
-                {
-                        char pidstr[9];
-                        snprintf(pidstr, sizeof pidstr, "%d", pgid);
-                        char * str = malloc(strlen(pidstr)+ 14);
-                        strcpy(str,"SIGINT para ");
-                        strcat(str,pidstr);
-                        write_to_logs_file("SINAL ",str);
-                }
-
                 pgid = getpid();
                 setpgrp();
 
@@ -376,14 +366,24 @@ int argchk(int argc, char* argv[], option* op)
                 strcat(result,argv[i]);
                 strcat(result, " ");
         }
-        strcat(result,"\n");
-        write(op->fileLogs, result, strlen(result));
+        write_to_logs_file("", result);
+        
 
         return 0;
 }
 
 void parent_sigint_handler(int signo)
 {
+        if(descrit != -1)
+        {
+                        char pidstr[9];
+                        snprintf(pidstr, sizeof pidstr, "%d", getpgid(getpid()));
+                        char * str = malloc(strlen(pidstr)+ 14);
+                        strcpy(str,"SIGINT para ");
+                        strcat(str,pidstr);
+                        write_to_logs_file("SINAL ",str);
+        }
+
         killpg(pgid, SIGTSTP);
         if(descrit != -1)
         {
