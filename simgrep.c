@@ -26,12 +26,6 @@ int main(int argc, char *argv[])
         // gets and sets the real time
         clock_gettime(CLOCK_REALTIME, &init_t);
 
-        /*
-           printf("\nReal time (ms): %f",
-               (end_t.tv_sec - init_t.tv_sec)* 1000.0 + (end_t.tv_nsec - init_t.tv_nsec) / 1000000.0);
-
-         */
-
         option op = {OP_FALSE, OP_FALSE, OP_FALSE, OP_FALSE, OP_FALSE, OP_FALSE, NON_EXISTENT, NON_EXISTENT};
         int r = argchk(argc, argv, &op);
         if(r != 0)
@@ -349,9 +343,7 @@ int argchk(int argc, char* argv[], option* op)
 
 
 
-        char *logfile = "sopas.txt";
-
-        op->fileLogs = open(logfile, O_WRONLY | O_APPEND | O_CREAT, 0644);
+        char *logfile;
 
         if ( (logfile = getenv("LOGFILENAME")) != NULL)
         {
